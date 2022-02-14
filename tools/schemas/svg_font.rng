@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0" ns="http://www.w3.org/2000/svg">
+
+  <start>
+    <ref name="font"/>
+  </start>
+
+  <define name="font">
+    <element name="svg">
+      <attribute name="width"><text/></attribute>
+      <attribute name="height"><text/></attribute>
+      <attribute name="viewBox"><text/></attribute>
+      <attribute name="preserveAspectRatio"><text/></attribute>
+      <element name="g">
+        <attribute name="transform"><text/></attribute>
+        <oneOrMore>
+          <element name="path">
+            <empty/>
+            <attribute name="d"><text/></attribute>
+          </element>
+        </oneOrMore>
+      </element>
+    </element>
+  </define>
+
+</grammar>
