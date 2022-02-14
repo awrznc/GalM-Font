@@ -1,0 +1,44 @@
+name: Build
+
+on: [push]
+
+jobs:
+
+  debian-build:
+    runs-on: ubuntu-latest
+    container: debian:11
+    env:
+      LC_TYPE: ja_JP.UTF-8
+      LC_ALL: ja_JP.UTF-8
+      LANG: ja_JP.UTF-8
+    steps:
+
+    - name: Get files
+      uses: actions/checkout@v2
+
+    - name: Setup
+      run: |
+        apt update -y && apt install -y curl libxml2-utils fontforge
+        curl -o /tmp/svgcleaner.tar.gz -OL https://github.com/RazrFalcon/svgcleaner/releases/download/v0.9.5/svgcleaner_linux_x86_64_0.9.5.tar.gz
+        tar xzvf /tmp/svgcleaner.tar.gz -C /usr/local/bin/
+        apt-get install -y locales
+        localedef -f UTF-8 -i ja_JP ja_JP
+        localedef -f UTF-8 -i en_US en_US
+        update-locale ja_JP.UTF-8
+
+    - name: Check SVG
+      run: |
+        bash -e -c 'ls -1 ./svg/Freehand/ | sed -E "s/(.)\.svg/\1/" | while read char; do xmllint --noout --relaxng ./tools/schemas/svg_font.rng "./svg/Freehand/${char}.svg"; done'
+
+    - name: Build Font
+      run: |
+        mkdir -p ./GalM-Font/ ./GalM-Font/svg/ ./GalM-Font/svg/Freehand/ ./GalM-Font/sfd/ ./GalM-Font/ttf/ ./GalM-Font/css/
+        bash -e -c 'ls -1 ./svg/Freehand/ | sed -E "s/(.)\.svg/\1/" | while read char; do svgcleaner "./svg/Freehand/${char}.svg" "./GalM-Font/svg/Freehand/${char}.svg"; done'
+        fontforge -lang=py -script ./tools/ttf_generator/main.py
+        echo "@font-face { font-family: \"GalM-Freehand\"; src: url(\"data:application/x-font-ttf; charset=utf-8; base64,$(base64 --wrap=0 ./GalM-Font/ttf/GalM-Freehand.ttf)\") format(\"truetype\"); }" > ./GalM-Font/css/GalM-Freehand.css
+
+    - name: Upload archive
+      uses: actions/upload-artifact@v2
+      with:
+        name: GalM-Font
+        path: GalM-Font/
