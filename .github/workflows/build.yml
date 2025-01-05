@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
 
-  debian-build:
+  build:
     runs-on: ubuntu-latest
     container: debian:11
     env:
@@ -14,7 +14,7 @@ jobs:
     steps:
 
     - name: Get files
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Setup
       run: |
@@ -38,7 +38,40 @@ jobs:
         echo "@font-face { font-family: \"GalM-Freehand\"; src: url(\"data:application/x-font-ttf; charset=utf-8; base64,$(base64 --wrap=0 ./GalM-Font/ttf/GalM-Freehand.ttf)\") format(\"truetype\"); }" > ./GalM-Font/css/GalM-Freehand.css
 
     - name: Upload archive
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: GalM-Font
         path: GalM-Font/
+
+    - name: Build pages
+      run: |
+        mkdir -p ./.dist/
+        cp ./GalM-Font/css/GalM-Freehand.css ./.dist/GalM-Freehand.css
+        cp ./site/index.html ./.dist/index.html
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './.dist'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    steps:
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
